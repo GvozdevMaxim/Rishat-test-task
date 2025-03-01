@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+<head>
+    <title>Buy {{ item.name }}</title>
+    <link rel="stylesheet" href="{% static 'payments/css/style.css' %}">
+</head>
+<body>
+    <div class="container">
+        <h1>{{ item.name }}</h1>
+        <p>{{ item.description }}</p>
+        <p>Price: {{ item.price }}</p>
+
+        <button id="buy-button">Buy</button>
+    </div>
+    <script src="https://js.stripe.com/v3/"></script>
+    <script type="text/javascript">
+      var stripe = Stripe('pk_test_51QwgSUCWHQDzNKbyHv9h6sj7qnT866uP5QvqsCkj8GZSeIXHvNhg75qAM00ouiUlvXnufLNJ6wjylU2EshsfDvB600MrfcJUvD');
+
+      var buyButton = document.getElementById('buy-button');
+      buyButton.addEventListener('click', function() {
+        fetch('/buy/{{ item.pk }}', {method: 'GET'})
+          .then(response => response.json())
+          .then(data => {
+            if (data.session_id) {
+              return stripe.redirectToCheckout({ sessionId: data.session_id });
+            } else {
+              alert('Failed to create checkout session');
+            }
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            alert('Error creating checkout session');
+          });
+      });
+    </script>
+</body>
+</html>

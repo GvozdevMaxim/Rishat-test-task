@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+<head>
+    <title>Order #{{ order.id }}</title>
+    <link rel="stylesheet" href="{% static 'payments/css/style.css' %}">
+</head>
+<body>
+    <div class="container">
+        <h1>Order #{{ order.id }}</h1>
+
+        {% for item in items %}
+            <div class="item">
+                <h2>{{ item.name }}</h2>
+                <p>{{ item.description }}</p>
+                <p>Price: {{ item.price }} {{ currency_symbol }}</p>
+            </div>
+        {% endfor %}
+
+        <h3>Subtotal: {{ subtotal_price }} {{ currency_symbol }}</h3>
+        {% if discount_amount > 0 %}
+            <h3>Discount: -{{ discount_amount }} {{ currency_symbol }}</h3>
+        {% endif %}
+        <h3>Tax ({{ tax_percentage }}%): +{{ tax_amount }} {{ currency_symbol }}</h3>
+        <h3><strong>Total: {{ total_price }} {{ currency_symbol }}</strong></h3>
+        <hr>
+        <div id="card-element"></div>
+        <button id="pay-button">Pay Now</button>
+        <div id="payment-message"></div>
+    </div>
+
+    <script src="https://js.stripe.com/v3/"></script>
+    <script type="text/javascript">
+        var stripe = Stripe('pk_test_51QwgSUCWHQDzNKbyHv9h6sj7qnT866uP5QvqsCkj8GZSeIXHvNhg75qAM00ouiUlvXnufLNJ6wjylU2EshsfDvB600MrfcJUvD');
+        var elements = stripe.elements();
+        var card = elements.create("card");
+        card.mount("#card-element");
+
+        document.getElementById('pay-button').addEventListener('click', function() {
+            fetch(`/buyorder/{{ order.id }}`, { method: 'GET' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.client_secret) {
+                        stripe.confirmCardPayment(data.client_secret, {
+                            payment_method: {
+                                card: card
+                            }
+                        }).then(function(result) {
+                            if (result.error) {
+                                document.getElementById("payment-message").textContent = result.error.message;
+                            } else {
+                                document.getElementById("payment-message").textContent = "Payment successful!";
+                            }
+                        });
+                    } else {
+                        alert('Failed to create payment intent');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error creating payment intent');
+                });
+        });
+    </script>
+</body>
+</html>
